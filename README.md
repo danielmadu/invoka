@@ -1,5 +1,8 @@
 # invoka
 
+[![Release](https://img.shields.io/github/v/release/danielmadu/invoka)](https://github.com/danielmadu/invoka/releases)
+[![License](https://img.shields.io/github/license/danielmadu/invoka)](LICENSE)
+
 A minimal Raycast-style launcher for **Linux and Windows**, written in **Rust** (backend) + **QML** (UI), with a catppuccin-based aesthetic.
 
 A daemon app: a floating frameless window invoked by a global hotkey (or IPC), fuzzy search over installed applications, Enter to launch, Esc to dismiss. Nothing more.
