@@ -65,6 +65,12 @@ fn run_daemon(show_immediately: bool) {
         engine.load(&QUrl::from(MAIN_QML));
     }
 
+    // Layer shell (Hyprland/wlroots builds) or plain floating window fallback.
+    let layershell_windows = bridge::ffi::invoka_layershell_setup();
+    if layershell_windows == 0 {
+        eprintln!("[invoka] using plain floating window (no layer shell)");
+    }
+
     spawn_ipc_server(listener);
     hotkey::start();
 

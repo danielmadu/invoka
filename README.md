@@ -16,6 +16,8 @@ A daemon app: a floating frameless window invoked by a global hotkey (or IPC), f
 - Single instance via Unix socket / named pipe (which also serves the IPC: `toggle`, `quit`, `query`)
 - TOML-based themes (catppuccin included as the default)
 - Icons resolved through the icon theme on Linux
+- Optional wlr layer shell support (Hyprland/sway) via the `layer-shell`
+  feature, with automatic fallback on other compositors
 
 ## Stack
 
@@ -47,6 +49,25 @@ invoka quit       # stop the daemon
 ```
 
 Inside the launcher: `↵` opens the selected app, `esc` closes the window.
+
+## Global hotkey
+
+On X11 and Windows the daemon registers the hotkey itself (default
+`Ctrl+Alt+Space`, configurable in `~/.config/invoka/config.toml`).
+On Wayland, register a DE/compositor keybind that runs `invoka toggle` —
+per-environment instructions (GNOME, Hyprland, sway, KDE) in
+[docs/keybinds.md](docs/keybinds.md).
+
+## Layer shell (optional)
+
+For native layer-surface placement on wlroots compositors (Hyprland, sway):
+
+```sh
+cargo build --release --features layer-shell
+```
+
+Requires the LayerShellQt dev package; other compositors get the regular
+floating window automatically. See [docs/keybinds.md](docs/keybinds.md).
 
 ## License
 

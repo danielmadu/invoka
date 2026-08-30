@@ -9,6 +9,12 @@ license = "MIT"
 name = "invoka"
 path = "src/main.rs"
 
+[features]
+# Opt-in wlr-layer-shell support (Hyprland, sway, wlroots). Requires the
+# LayerShellQt development package at build time; falls back to a plain
+# floating window at runtime when the compositor has no layer shell.
+layer-shell = ["dep:pkg-config"]
+
 [dependencies]
 cxx = "1.0"
 cxx-qt = "0.9"
@@ -23,6 +29,8 @@ global-hotkey = "0.8"
 [build-dependencies]
 # Required for linking the Qt object files into the final binary
 cxx-qt-build = { version = "0.9", features = ["link_qt_object_files"] }
+# Used by the `layer-shell` feature to locate LayerShellQt
+pkg-config = { version = "0.3", optional = true }
 
 [profile.release]
 lto = true

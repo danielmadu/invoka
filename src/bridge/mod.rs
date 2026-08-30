@@ -15,6 +15,13 @@ pub mod ffi {
         fn invoka_tray_init(on_toggle: fn(), on_quit: fn());
     }
 
+    unsafe extern "C++" {
+        include!("layershell.h");
+        /// Attach the launcher window to the wlr layer shell (feature builds
+        /// only); returns 0 when the fallback plain window is in use.
+        fn invoka_layershell_setup() -> i32;
+    }
+
     unsafe extern "RustQt" {
         #[qobject]
         #[qml_element]
