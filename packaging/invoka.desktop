@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Invoka
+GenericName=Application launcher
+Comment=Fuzzy-search and launch applications
+Exec=invoka toggle
+Icon=system-search
+Terminal=false
+Categories=Utility;
+NoDisplay=false

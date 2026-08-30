@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Theme hot-reload (T4.1): `notify`-based watcher on the config directory;
+  edits to `theme.toml` are debounced, deduplicated and applied live to the
+  window. The watcher registers before Qt init so early edits are not missed
+- Usage-frequency ranking (T4.2): launches persist counters to
+  `~/.local/state/invoka/usage.toml` (`%APPDATA%\invoka` on Windows); empty
+  query orders most-used first, real queries get a capped frequency boost
+- Packaging (T4.3): `packaging/PKGBUILD` (Arch), `packaging/build-appimage.sh`
+  (linuxdeploy + Qt plugin), desktop entries, bilingual README (EN + pt-BR)
 - Windows port (M3): Start Menu application scan (`.lnk` parsing via
   parselnk, ProgramData + %APPDATA%, uninstallers filtered), launch through
   `cmd /C start` detached

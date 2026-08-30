@@ -14,7 +14,9 @@ A daemon app: a floating frameless window invoked by a global hotkey (or IPC), f
 - Native global hotkey on X11 and Windows
 - Wayland: daemon + IPC (`invoka toggle`) + DE/compositor keybind
 - Single instance via Unix socket / named pipe (which also serves the IPC: `toggle`, `quit`, `query`)
-- TOML-based themes (catppuccin included as the default)
+- TOML-based themes (catppuccin included as the default), hot-reloaded when
+  `~/.config/invoka/theme.toml` changes
+- Usage-frequency ranking persisted across restarts (most used apps first)
 - Icons resolved through the icon theme on Linux; extracted from shortcut
   targets (HICON → PNG, cached) on Windows
 - Optional wlr layer shell support (Hyprland/sway) via the `layer-shell`
@@ -86,6 +88,67 @@ cargo build --release --features layer-shell
 Requires the LayerShellQt dev package; other compositors get the regular
 floating window automatically. See [docs/keybinds.md](docs/keybinds.md).
 
+## Packaging
+
+- **Arch (AUR-style)**: `packaging/PKGBUILD`
+- **AppImage**: `./packaging/build-appimage.sh` (uses linuxdeploy + Qt plugin)
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
+
+---
+
+# invoka (português)
+
+Um launcher minimalista estilo Raycast para **Linux e Windows**, escrito em
+**Rust** (backend) + **QML** (UI), com estética baseada no catppuccin.
+
+Um app daemon: janela flutuante frameless invocada por hotkey global (ou IPC),
+busca fuzzy dos aplicativos instalados, Enter abre, Esc fecha. Nada mais.
+
+## Recursos
+
+- Busca fuzzy de apps (`.desktop` de `XDG_DATA_DIRS`, respeitando `NoDisplay`/`NotShowIn`)
+- Ranking por pontuação + frequência de uso (persistido entre reinícios)
+- Hotkey global nativa no X11 e Windows
+- Wayland: daemon + IPC (`invoka toggle`) + keybind do DE/compositor
+- Instância única via Unix socket / named pipe (que também serve o IPC: `toggle`, `quit`)
+- Temas via TOML (catppuccin por padrão), com **hot-reload** ao editar
+  `~/.config/invoka/theme.toml`
+- Ícones via tema de ícones no Linux; extraídos dos atalhos (HICON → PNG, com
+  cache) no Windows
+- Suporte opcional a wlr layer shell (Hyprland/sway) via feature `layer-shell`,
+  com fallback automático nos outros compositors
+- Windows: scan do Start Menu (`.lnk`), hotkey global e instância única via
+  named pipe
+
+## Instalação
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/danielmadu/invoka/master/install.sh | sh
+```
+
+Instala em `~/.local/bin` e inicia o daemon. Empacotamento: `packaging/PKGBUILD`
+(Arch) e `packaging/build-appimage.sh` (AppImage).
+
+## Uso
+
+```sh
+invoka            # inicia o daemon
+invoka toggle     # alterna a janela (útil para keybinds no Wayland/GNOME)
+invoka quit       # encerra o daemon
+```
+
+Dentro do launcher: `↵` abre o app selecionado, `esc` fecha a janela.
+
+## Hotkey global
+
+No X11 e Windows o daemon registra a hotkey sozinho (padrão `Ctrl+Alt+Space`,
+configurável em `~/.config/invoka/config.toml`). No Wayland, registre um
+keybind do DE/compositor que execute `invoka toggle` — instruções por
+ambiente (GNOME, Hyprland, sway, KDE) em [docs/keybinds.md](docs/keybinds.md).
+
+## Licença
+
+MIT — veja [LICENSE](LICENSE).

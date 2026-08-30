@@ -1,0 +1,36 @@
+# Maintainer: Daniel Madu <daniel@madu.dev>
+pkgname=invoka
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Minimal Raycast-style launcher for Linux and Windows"
+arch=(x86_64 aarch64)
+url="https://github.com/danielmadu/invoka"
+license=(MIT)
+depends=(qt6-base qt6-svg)
+makedepends=(cargo clang cmake)
+optdepends=('layer-shell-qt: wlr layer shell support (feature build)')
+source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
+sha256sums=('SKIP')
+options=(!strip)
+
+build() {
+  cd "$pkgname-$pkgver"
+  export QMAKE=/usr/lib/qt6/bin/qmake
+  export RUSTUP_TOOLCHAIN=stable
+  cargo build --release --locked --features layer-shell
+}
+
+check() {
+  cd "$pkgname-$pkgver"
+  cargo test --release --locked
+}
+
+package() {
+  cd "$pkgname-$pkgver"
+  install -Dm755 target/release/invoka "$pkgdir/usr/bin/invoka"
+  install -Dm644 packaging/invoka.desktop \
+    "$pkgdir/usr/share/applications/invoka.desktop"
+  install -Dm644 packaging/invoka-daemon.desktop \
+    "$pkgdir/etc/xdg/autostart/invoka-daemon.desktop"
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

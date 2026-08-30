@@ -43,6 +43,8 @@ nucleo = "0.5"
 freedesktop-desktop-entry = "0.8"
 freedesktop-icons = "0.4"
 global-hotkey = "0.8"
+# Theme hot-reload
+notify = "8"
 
 [build-dependencies]
 # Required for linking the Qt object files into the final binary

@@ -111,6 +111,19 @@ pub fn queue_on_qt(f: impl FnOnce(Pin<&mut ffi::Controller>) + Send + 'static) -
     }
 }
 
+/// Apply a (possibly just-reloaded) theme to the live window; no-op
+/// pre-bootstrap.
+pub fn apply_theme(theme: Theme) {
+    queue_on_qt(move |mut controller| {
+        // `set_*` consumes the Pin; reborrow for each property.
+        controller.as_mut().set_background(QString::from(theme.background.clone()));
+        controller.as_mut().set_foreground(QString::from(theme.foreground.clone()));
+        controller.as_mut().set_accent(QString::from(theme.accent.clone()));
+        controller.as_mut().set_selection(QString::from(theme.selection.clone()));
+        controller.as_mut().set_muted(QString::from(theme.muted.clone()));
+    });
+}
+
 /// Theme tokens resolved once at startup.
 fn load_theme() -> Theme {
     let Some(mut path) = crate::config::config_dir() else {
@@ -232,6 +245,7 @@ impl ffi::Controller {
         let all_apps = apps();
         if let Some(app) = all_apps.get(app_index) {
             apps::launch(app);
+            crate::usage::record(&app.id);
         }
         self.hide();
     }

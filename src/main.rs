@@ -6,6 +6,8 @@ pub mod icons;
 pub mod ipc;
 pub mod search;
 pub mod theme;
+pub mod usage;
+pub mod watch;
 
 use cxx_qt_lib::{QQmlApplicationEngine, QUrl};
 
@@ -56,6 +58,12 @@ fn run_daemon(show_immediately: bool) {
         Some(listener) => listener,
         None => std::process::exit(1),
     };
+
+    // Theme watcher first (pure Rust): Qt init + QML load can take seconds,
+    // and edits landing in that window would otherwise be missed. Theme
+    // events before bootstrap are no-ops (the controller loads the theme at
+    // construction anyway).
+    watch::start_theme_watcher();
 
     // QApplication lives on the C++ side (needed for QSystemTrayIcon).
     bridge::ffi::invoka_app_init();

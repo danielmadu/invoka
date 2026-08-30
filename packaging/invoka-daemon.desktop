@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Invoka daemon
+Comment=Invoka launcher daemon (started hidden)
+Exec=invoka
+Terminal=false
+X-GNOME-Autostart-enabled=true
