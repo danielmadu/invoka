@@ -3,17 +3,30 @@
 #
 #   curl -fsSL https://raw.githubusercontent.com/danielmadu/invoka/master/install.sh | sh
 #
+# Options:
+#   --no-start   do not start the daemon after installing
+#
 # Environment overrides:
 #   INSTALL_DIR  where to place the binary (default: ~/.local/bin)
 #   VERSION      release tag to install (default: latest)
 #   REPO         GitHub repo (default: danielmadu/invoka)
+#   INVOKA_NO_START=1  same as --no-start
 
 set -eu
 
 REPO="${REPO:-danielmadu/invoka}"
 INSTALL_DIR="${INSTALL_DIR:-$HOME/.local/bin}"
+START_DAEMON="${INVOKA_NO_START:+0}"
+START_DAEMON="${START_DAEMON:-1}"
 
 main() {
+    for arg in "$@"; do
+        case "$arg" in
+            --no-start) START_DAEMON=0 ;;
+            *) err "unknown option: $arg (usage: install.sh [--no-start])" ;;
+        esac
+    done
+
     need curl; need tar
 
     case "$(uname -s)" in
@@ -66,6 +79,44 @@ main() {
             info "  echo 'export PATH=\"${INSTALL_DIR}:\$PATH\"' >> ~/.bashrc"
             ;;
     esac
+
+    start_daemon
+}
+
+start_daemon() {
+    if [ "$START_DAEMON" != 1 ]; then
+        info "daemon not started (--no-start)"
+        return
+    fi
+
+    if daemon_running; then
+        info "daemon already running (use 'invoka toggle' or 'invoka quit')"
+        return
+    fi
+
+    # Detach so the daemon survives the installer (and the curl|sh pipeline).
+    if command -v nohup >/dev/null 2>&1; then
+        nohup "${INSTALL_DIR}/invoka" >/dev/null 2>&1 &
+    else
+        "${INSTALL_DIR}/invoka" >/dev/null 2>&1 &
+    fi
+    sleep 1
+
+    if daemon_running; then
+        info "daemon started (toggle it with 'invoka toggle')"
+        info "for a keybind in your DE/compositor, see docs/keybinds.md"
+    else
+        info "could not confirm the daemon started (no display server?)."
+        info "run 'invoka' manually inside your desktop session."
+    fi
+}
+
+daemon_running() {
+    if command -v pgrep >/dev/null 2>&1; then
+        pgrep -x invoka >/dev/null 2>&1
+    else
+        return 1
+    fi
 }
 
 latest_tag() {

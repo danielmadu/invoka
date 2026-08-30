@@ -43,7 +43,9 @@ curl -fsSL https://raw.githubusercontent.com/danielmadu/invoka/master/install.sh
 ```
 
 Installs to `~/.local/bin` (override with `INSTALL_DIR`; pin a version with
-`VERSION=v0.1.0`). Linux x86_64/aarch64 only for now — Windows ships with M3.
+`VERSION=v0.1.0`) and starts the daemon (`--no-start` or
+`INVOKA_NO_START=1` to skip). Linux x86_64/aarch64 only for now — Windows
+ships with M3.
 
 ## Build
 
