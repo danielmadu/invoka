@@ -75,12 +75,21 @@ main() {
     case ":${PATH}:" in
         *":${INSTALL_DIR}:"*) ;;
         *)
+            rc="$(shell_rc)"
             info "add ${INSTALL_DIR} to your PATH, e.g.:"
-            info "  echo 'export PATH=\"${INSTALL_DIR}:\$PATH\"' >> ~/.bashrc"
+            info "  echo 'export PATH=\"${INSTALL_DIR}:\$PATH\"' >> ~/${rc}"
             ;;
     esac
 
     start_daemon
+}
+
+shell_rc() {
+    case "${SHELL:-}" in
+        */zsh) printf '.zshrc' ;;
+        */fish) printf '.config/fish/config.fish' ;;
+        *) printf '.bashrc' ;;
+    esac
 }
 
 start_daemon() {
