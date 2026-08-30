@@ -34,6 +34,17 @@ A daemon app: a floating frameless window invoked by a global hotkey (or IPC), f
 - Rust (rustup)
 - Qt 6 dev packages (`qt6-base-dev` and `libqt6svg6` on Debian/Ubuntu)
 
+## Install
+
+Install the latest release binary with curl:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/danielmadu/invoka/master/install.sh | sh
+```
+
+Installs to `~/.local/bin` (override with `INSTALL_DIR`; pin a version with
+`VERSION=v0.1.0`). Linux x86_64/aarch64 only for now — Windows ships with M3.
+
 ## Build
 
 ```sh
