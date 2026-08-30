@@ -9,12 +9,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Windows port (M3): Start Menu application scan (`.lnk` parsing via
+  parselnk, ProgramData + %APPDATA%, uninstallers filtered), launch through
+  `cmd /C start` detached
+- Windows icon extraction (T3.3): HICON → RGBA → PNG via GDI with a cache at
+  `%APPDATA%\invoka\icons`
+- Windows single-instance/IPC (T3.2): named pipe `\\.\pipe\invoka-<user>`
+  with the same `toggle`/`quit` line protocol
+- Windows global hotkey: manager created on a dedicated Win32 message-pump
+  thread, events forwarded to the Qt thread
+- Windows release CI (T3.4): MSVC build on GitHub Actions, asset
+  `invoka-<tag>-x86_64-windows.zip` attached to tag releases
 - `layer-shell` cargo feature (T2.1): opt-in wlr-layer-shell support via
   LayerShellQt — overlay layer, centered, keyboard on-demand. Build falls
   back to the stub when LayerShellQt is absent; runtime falls back to the
   plain floating window on compositors without layer shell (GNOME)
 - Per-environment keybind documentation (T2.2): GNOME gsettings/dconf,
   Hyprland, sway, KDE, autostart — `docs/keybinds.md`
+- `install.sh`: curl one-liner installer for Linux release binaries, with
+  daemon auto-start (`--no-start` / `INVOKA_NO_START=1` to skip)
 
 ## [0.1.0] - 2026-08-23
 

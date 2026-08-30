@@ -1,7 +1,5 @@
 //! Application discovery: entries, scanning and launching.
 
-pub mod linux;
-
 use std::path::PathBuf;
 
 /// A single launchable application entry.
@@ -34,8 +32,17 @@ impl AppEntry {
     }
 }
 
+#[cfg(unix)]
+pub mod linux;
+
+#[cfg(windows)]
+pub mod windows;
+
 /// Scan every known source for installed applications.
 pub fn scan() -> Vec<AppEntry> {
+    #[cfg(windows)]
+    let mut apps = windows::scan_start_menu();
+    #[cfg(not(windows))]
     let mut apps = linux::scan_desktop_entries();
     sort_by_name(&mut apps);
     apps
@@ -43,7 +50,10 @@ pub fn scan() -> Vec<AppEntry> {
 
 /// Launch an application detached from this process.
 pub fn launch(app: &AppEntry) {
-    crate::apps::linux::launch(app);
+    #[cfg(windows)]
+    return windows::launch(app);
+    #[cfg(not(windows))]
+    return crate::apps::linux::launch(app);
 }
 
 fn sort_by_name(apps: &mut [AppEntry]) {

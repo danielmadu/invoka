@@ -141,6 +141,7 @@ fn key_digit(digit: char) -> Code {
 /// Register the global hotkey and forward presses to the Qt event loop.
 ///
 /// Returns whether registration succeeded.
+#[cfg(not(windows))]
 pub fn start() -> bool {
     let manager = match GlobalHotKeyManager::new() {
         Ok(manager) => manager,
@@ -160,6 +161,61 @@ pub fn start() -> bool {
     // unregister the hotkey.
     std::mem::forget(manager);
 
+    std::thread::spawn(move || {
+        for event in GlobalHotKeyEvent::receiver() {
+            if event.id() == hotkey.id() && event.state == HotKeyState::Pressed {
+                bridge::toggle_window();
+            }
+        }
+    });
+
+    true
+}
+
+/// Windows variant: the `GlobalHotKeyManager` must be created on (and its
+/// hidden window owned by) a thread pumping the Win32 message loop.
+#[cfg(windows)]
+pub fn start() -> bool {
+    let hotkey = configured_hotkey();
+
+    // Owner thread: registers the hotkey and pumps messages forever.
+    std::thread::spawn(move || {
+        let manager = match GlobalHotKeyManager::new() {
+            Ok(manager) => manager,
+            Err(err) => {
+                eprintln!("[invoka] global hotkey unavailable: {err}");
+                return;
+            }
+        };
+
+        if let Err(err) = manager.register(hotkey) {
+            eprintln!("[invoka] failed to register hotkey: {err}");
+            return;
+        }
+
+        // Keep the manager alive for the process lifetime; dropping it would
+        // unregister the hotkey.
+        std::mem::forget(manager);
+
+        let mut msg: windows_sys::Win32::UI::WindowsAndMessaging::MSG = unsafe {
+            std::mem::zeroed()
+        };
+        unsafe {
+            // GetMessageW returns -1 on error, 0 on WM_QUIT, > 0 otherwise.
+            while windows_sys::Win32::UI::WindowsAndMessaging::GetMessageW(
+                &mut msg,
+                std::ptr::null_mut(),
+                0,
+                0,
+            ) > 0
+            {
+                windows_sys::Win32::UI::WindowsAndMessaging::TranslateMessage(&msg);
+                windows_sys::Win32::UI::WindowsAndMessaging::DispatchMessageW(&msg);
+            }
+        }
+    });
+
+    // Listener thread: forwards crate events to the Qt event loop.
     std::thread::spawn(move || {
         for event in GlobalHotKeyEvent::receiver() {
             if event.id() == hotkey.id() && event.state == HotKeyState::Pressed {

@@ -228,7 +228,7 @@ Window {
                                 anchors.margins: 3
                                 fillMode: Image.PreserveAspectFit
                                 smooth: true
-                                source: rowIcon.length > 0 ? ("file://" + rowIcon) : ""
+                                source: rowIcon.startsWith("file:") ? rowIcon : (rowIcon.length > 0 ? ("file://" + rowIcon) : "")
                                 visible: status === Image.Ready
                                 asynchronous: true
                             }

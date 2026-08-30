@@ -15,6 +15,24 @@ path = "src/main.rs"
 # floating window at runtime when the compositor has no layer shell.
 layer-shell = ["dep:pkg-config"]
 
+[target.'cfg(windows)'.dependencies]
+# Start Menu .lnk parsing (pure Rust)
+parselnk = "0.1"
+# Named pipes IPC, hotkey message loop and HICON extraction
+windows-sys = { version = "0.59", features = [
+    "Win32_Foundation",
+    "Win32_Graphics_Gdi",
+    "Win32_Security",
+    "Win32_Storage_FileSystem",
+    "Win32_System_IO",
+    "Win32_System_Pipes",
+    "Win32_System_Threading",
+    "Win32_UI_Shell",
+    "Win32_UI_WindowsAndMessaging",
+] }
+# PNG encoding for the icon cache
+image = { version = "0.25", default-features = false, features = ["png"] }
+
 [dependencies]
 cxx = "1.0"
 cxx-qt = "0.9"

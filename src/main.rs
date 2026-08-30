@@ -2,6 +2,7 @@ pub mod apps;
 pub mod bridge;
 pub mod config;
 pub mod hotkey;
+pub mod icons;
 pub mod ipc;
 pub mod search;
 pub mod theme;
@@ -79,6 +80,7 @@ fn run_daemon(show_immediately: bool) {
     }
 
     let exit_code = bridge::ffi::invoka_app_exec();
+    #[cfg(unix)]
     let _ = std::fs::remove_file(ipc::socket_path());
     std::process::exit(exit_code);
 }
@@ -87,7 +89,7 @@ fn run_daemon(show_immediately: bool) {
 ///
 /// Commands arrive from foreign threads; window mutations are marshalled onto
 /// the Qt event loop through the `CxxQtThread` captured by `bootstrap()`.
-fn spawn_ipc_server(listener: std::os::unix::net::UnixListener) {
+fn spawn_ipc_server(listener: ipc::IpcListener) {
     std::thread::spawn(move || {
         ipc::serve(listener, |command| match command {
             Command::Toggle => {

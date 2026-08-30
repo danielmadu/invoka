@@ -170,6 +170,22 @@ fn escape_json(value: &str) -> String {    let mut out = String::with_capacity(v
     out
 }
 
+/// Icon path serialized to QML. Linux emits the raw path (QML prepends
+/// `file://`); Windows emits a full `file:///C:/...` URL so `C:\` paths load.
+fn icon_url(icon: Option<&std::path::PathBuf>) -> String {
+    let Some(path) = icon else {
+        return String::new();
+    };
+    #[cfg(windows)]
+    {
+        format!("file:///{}", path.to_string_lossy().replace('\\', "/"))
+    }
+    #[cfg(not(windows))]
+    {
+        path.to_string_lossy().into_owned()
+    }
+}
+
 fn serialize_rows(ranked: &[usize], apps: &[AppEntry]) -> String {
     let mut rows = String::from("[");
     for (position, &app_index) in ranked.iter().take(MAX_RESULTS).enumerate() {
@@ -180,9 +196,7 @@ fn serialize_rows(ranked: &[usize], apps: &[AppEntry]) -> String {
         rows.push_str("{\"name\":\"");
         rows.push_str(&escape_json(&app.name));
         rows.push_str("\",\"icon\":\"");
-        if let Some(icon) = &app.icon {
-            rows.push_str(&escape_json(&icon.to_string_lossy()));
-        }
+        rows.push_str(&escape_json(&icon_url(app.icon.as_ref())));
         rows.push_str("\"}");
     }
     rows.push(']');
@@ -247,6 +261,15 @@ mod tests {
             json,
             r#"[{"name":"Beta","icon":""},{"name":"Alpha","icon":""}]"#
         );
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn windows_icons_serialize_as_file_urls() {
+        let mut entry = AppEntry::new("a", "Alpha");
+        entry.icon = Some(std::path::PathBuf::from(r"C:\icons\app.png"));
+        let json = serialize_rows(&[0], &[entry]);
+        assert!(json.contains(r"file:///C:/icons/app.png"), "{json}");
     }
 
     #[test]

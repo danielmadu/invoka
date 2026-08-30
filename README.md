@@ -15,9 +15,12 @@ A daemon app: a floating frameless window invoked by a global hotkey (or IPC), f
 - Wayland: daemon + IPC (`invoka toggle`) + DE/compositor keybind
 - Single instance via Unix socket / named pipe (which also serves the IPC: `toggle`, `quit`, `query`)
 - TOML-based themes (catppuccin included as the default)
-- Icons resolved through the icon theme on Linux
+- Icons resolved through the icon theme on Linux; extracted from shortcut
+  targets (HICON → PNG, cached) on Windows
 - Optional wlr layer shell support (Hyprland/sway) via the `layer-shell`
   feature, with automatic fallback on other compositors
+- Windows: Start Menu scan (`.lnk`), `RegisterHotKey`-backed global hotkey,
+  single-instance via named pipe
 
 ## Stack
 
@@ -27,6 +30,7 @@ A daemon app: a floating frameless window invoked by a global hotkey (or IPC), f
 | UI | QML (Qt 6) |
 | Fuzzy search | [nucleo](https://github.com/helix-editor/nucleo) |
 | Linux apps | freedesktop-desktop-entry + freedesktop-icons |
+| Windows apps | [parselnk](https://crates.io/crates/parselnk) (Start Menu `.lnk`) |
 | Hotkey | global-hotkey |
 
 ## Requirements
