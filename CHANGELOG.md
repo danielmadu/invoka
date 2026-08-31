@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-08-30
+
 ### Added
 
 - Settings window (M5): "Settings" action in the tray menu opens a frameless
@@ -66,4 +68,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Tray icon (QSystemTrayIcon/SNI)
 - Hide on focus loss
 
+[0.2.0]: https://github.com/danielmadu/invoka/releases/tag/v0.2.0
 [0.1.0]: https://github.com/danielmadu/invoka/releases/tag/v0.1.0

@@ -1,6 +1,6 @@
 # Maintainer: Daniel Madu <daniel@madu.dev>
 pkgname=invoka
-pkgver=0.1.0
+pkgver=0.2.0
 pkgrel=1
 pkgdesc="Minimal Raycast-style launcher for Linux and Windows"
 arch=(x86_64 aarch64)
