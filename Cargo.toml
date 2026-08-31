@@ -40,13 +40,15 @@ cxx-qt-lib = { version = "0.9", features = ["qt_full"] }
 serde = { version = "1", features = ["derive"] }
 toml = "0.8"
 nucleo = "0.5"
-freedesktop-icons = "0.4"
 global-hotkey = "0.8"
 # Theme hot-reload
 notify = "8"
-# `default-features` drops gettext: not used by invoka and gettext-sys does
-# not build on Windows/MSVC
+
+# Linux-only application discovery (xdg-based crates do not build on Windows)
+[target.'cfg(unix)'.dependencies]
+# `default-features` drops gettext: not used by invoka
 freedesktop-desktop-entry = { version = "0.8", default-features = false }
+freedesktop-icons = "0.4"
 
 [build-dependencies]
 # Required for linking the Qt object files into the final binary
