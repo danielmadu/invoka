@@ -221,13 +221,25 @@ mod imp {
         ok
     }
 
+    /// Raw `HANDLE` is `!Send`; the pipe instance is only ever handed to the
+    /// single dedicated server thread, so the newtype promise is sound.
+    pub struct IpcListener(pub HANDLE);
+
+    unsafe impl Send for IpcListener {}
+
     /// Blocking accept loop. Calls `handler` per command; stops when it
     /// returns false.
-    pub fn serve(listener: HANDLE, mut handler: impl FnMut(Command) -> bool) {
+    pub fn serve(listener: IpcListener, mut handler: impl FnMut(Command) -> bool) {
+        serve_loop(listener.0, &mut handler)
+    }
+
+    fn serve_loop(
+        listener: HANDLE,
+        handler: &mut impl FnMut(Command) -> bool,
+    ) {
         let mut first = true;
         let mut quit = false;
-        while !quit {
-            // Reuse the instance created during bind for the first client;
+        while !quit {            // Reuse the instance created during bind for the first client;
             // afterwards create a fresh one per iteration.
             let handle = if first {
                 first = false;
@@ -251,7 +263,7 @@ mod imp {
                 continue;
             }
 
-            quit = read_commands(handle, &mut handler);
+            quit = read_commands(handle, &mut *handler);
 
             unsafe {
                 FlushFileBuffers(handle);
@@ -296,11 +308,9 @@ mod imp {
 
 pub use imp::*;
 
-/// Listener type handed to [`serve`] (Unix socket or pipe instance handle).
 #[cfg(unix)]
+/// Listener type handed to [`serve`] (Unix socket).
 pub type IpcListener = std::os::unix::net::UnixListener;
-#[cfg(windows)]
-pub type IpcListener = windows_sys::Win32::Foundation::HANDLE;
 
 #[cfg(test)]
 mod tests {
