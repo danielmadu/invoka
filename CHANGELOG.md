@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Settings window (M5): "Settings" action in the tray menu opens a frameless
+  QML window with the 10 bundled theme presets — swatch preview
+  (background/accent/foreground), one-click apply via theme.toml +
+  hot-reload, active theme checkmark and "custom" indicator for hand-edited
+  themes
+- Theme presets (M5 groundwork): 10 themes taken verbatim from the Omarchy
+  quattro collection (catppuccin, catppuccin-latte, tokyo-night, nord,
+  gruvbox, everforest, kanagawa, rose-pine, matte-black, hackerman),
+  embedded in the binary via `include_str!` for the upcoming settings
+  window
 - Theme hot-reload (T4.1): `notify`-based watcher on the config directory;
   edits to `theme.toml` are debounced, deduplicated and applied live to the
   window. The watcher registers before Qt init so early edits are not missed

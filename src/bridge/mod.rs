@@ -12,7 +12,7 @@ pub mod ffi {
         include!("tray.h");
         fn invoka_app_init();
         fn invoka_app_exec() -> i32;
-        fn invoka_tray_init(on_toggle: fn(), on_quit: fn());
+        fn invoka_tray_init(on_toggle: fn(), on_quit: fn(), on_settings: fn());
     }
 
     unsafe extern "C++" {
@@ -31,6 +31,9 @@ pub mod ffi {
         #[qproperty(QString, selection)]
         #[qproperty(QString, muted)]
         #[qproperty(bool, visible)]
+        #[qproperty(bool, settings_visible)]
+        #[qproperty(QString, themes_json)]
+        #[qproperty(QString, active_theme_id)]
         #[namespace = "invoka"]
         type Controller = super::ControllerRust;
 
@@ -57,6 +60,13 @@ pub mod ffi {
         /// Hide the launcher window (Esc / focus loss / activation end).
         #[qinvokable]
         fn hide(self: Pin<&mut Controller>);
+
+        /// Write the theme preset `id` to `<config_dir>/theme.toml`; the
+        /// hot-reload watcher applies it instantly. Also refreshes
+        /// `active_theme_id`.
+        #[qinvokable]
+        #[cxx_name = "selectTheme"]
+        fn select_theme(self: Pin<&mut Controller>, id: QString);
     }
 
     // Enables CxxQtThread: background threads can queue closures that mutate
@@ -93,6 +103,13 @@ pub fn toggle_window() {
     });
 }
 
+/// Open the settings window from any thread; no-op pre-bootstrap.
+pub fn open_settings_window() {
+    queue_on_qt(|controller| {
+        controller.set_settings_visible(true);
+    });
+}
+
 /// Queue `f` on the Qt event loop; no-op if the window was never bootstrapped.
 pub fn queue_on_qt(f: impl FnOnce(Pin<&mut ffi::Controller>) + Send + 'static) -> bool {
     let guard = QT_THREAD.lock().unwrap();
@@ -121,6 +138,8 @@ pub fn apply_theme(theme: Theme) {
         controller.as_mut().set_accent(QString::from(theme.accent.clone()));
         controller.as_mut().set_selection(QString::from(theme.selection.clone()));
         controller.as_mut().set_muted(QString::from(theme.muted.clone()));
+        controller.as_mut()
+            .set_active_theme_id(QString::from(crate::builtin::detect_active_id(&theme)));
     });
 }
 
@@ -133,6 +152,31 @@ fn load_theme() -> Theme {
     Theme::load(&path)
 }
 
+/// Serialize the bundled presets for the settings UI: id, label and the
+/// three colors the swatch previews need.
+fn themes_json() -> String {
+    let mut json = String::from("[");
+    for (position, preset) in crate::builtin::PRESETS.iter().enumerate() {
+        if position > 0 {
+            json.push(',');
+        }
+        let theme = Theme::parse(preset.toml);
+        json.push_str("{\"id\":\"");
+        json.push_str(&escape_json(preset.id));
+        json.push_str("\",\"label\":\"");
+        json.push_str(&escape_json(preset.label));
+        json.push_str("\",\"accent\":\"");
+        json.push_str(&theme.accent);
+        json.push_str("\",\"background\":\"");
+        json.push_str(&theme.background);
+        json.push_str("\",\"foreground\":\"");
+        json.push_str(&theme.foreground);
+        json.push_str("\"}");
+    }
+    json.push(']');
+    json
+}
+
 /// Rust state backing the `Controller` QObject exposed to QML.
 pub struct ControllerRust {
     ranked: Vec<usize>,
@@ -142,6 +186,9 @@ pub struct ControllerRust {
     selection: QString,
     muted: QString,
     visible: bool,
+    settings_visible: bool,
+    themes_json: QString,
+    active_theme_id: QString,
 }
 
 impl Default for ControllerRust {
@@ -149,12 +196,15 @@ impl Default for ControllerRust {
         let theme = load_theme();
         Self {
             ranked: Vec::new(),
-            background: QString::from(theme.background),
-            foreground: QString::from(theme.foreground),
-            accent: QString::from(theme.accent),
-            selection: QString::from(theme.selection),
-            muted: QString::from(theme.muted),
+            background: QString::from(theme.background.clone()),
+            foreground: QString::from(theme.foreground.clone()),
+            accent: QString::from(theme.accent.clone()),
+            selection: QString::from(theme.selection.clone()),
+            muted: QString::from(theme.muted.clone()),
             visible: false,
+            settings_visible: false,
+            themes_json: QString::from(themes_json()),
+            active_theme_id: QString::from(crate::builtin::detect_active_id(&theme)),
         }
     }
 }
@@ -166,6 +216,10 @@ fn tray_toggle() {
 
 fn tray_quit() {
     std::process::exit(0);
+}
+
+fn tray_open_settings() {
+    open_settings_window();
 }
 
 fn escape_json(value: &str) -> String {    let mut out = String::with_capacity(value.len() + 2);
@@ -224,7 +278,7 @@ impl ffi::Controller {
         let thread = self.qt_thread();
         *QT_THREAD.lock().unwrap() = Some(thread);
 
-        ffi::invoka_tray_init(tray_toggle, tray_quit);
+        ffi::invoka_tray_init(tray_toggle, tray_quit, tray_open_settings);
     }
 
     pub fn search(mut self: Pin<&mut Self>, query: QString) -> QString {
@@ -252,6 +306,22 @@ impl ffi::Controller {
 
     pub fn hide(self: Pin<&mut Self>) {
         self.set_visible(false);
+    }
+
+    pub fn select_theme(mut self: Pin<&mut Self>, id: QString) {
+        let Some(preset) = crate::builtin::write_preset(&id.to_string()) else {
+            eprintln!("[invoka] unknown theme preset '{}'", id.to_string());
+            return;
+        };
+        // Apply immediately; the watcher dedupes (same parsed theme) so no
+        // double reload happens when it picks the file change up.
+        let theme = Theme::parse(preset.toml);
+        self.as_mut().set_background(QString::from(theme.background.clone()));
+        self.as_mut().set_foreground(QString::from(theme.foreground.clone()));
+        self.as_mut().set_accent(QString::from(theme.accent.clone()));
+        self.as_mut().set_selection(QString::from(theme.selection.clone()));
+        self.as_mut().set_muted(QString::from(theme.muted.clone()));
+        self.as_mut().set_active_theme_id(QString::from(preset.id));
     }
 }
 
@@ -284,6 +354,31 @@ mod tests {
         entry.icon = Some(std::path::PathBuf::from(r"C:\icons\app.png"));
         let json = serialize_rows(&[0], &[entry]);
         assert!(json.contains(r"file:///C:/icons/app.png"), "{json}");
+    }
+
+    #[test]
+    fn themes_json_lists_every_preset_with_colors() {
+        let json = themes_json();
+        assert!(json.starts_with('[') && json.ends_with(']'));
+        assert_eq!(json.matches("\"id\":\"").count(), crate::builtin::PRESETS.len());
+        for preset in crate::builtin::PRESETS {
+            assert!(json.contains(&format!("\"id\":\"{}\"", preset.id)), "{preset:?} missing");
+            assert!(json.contains(&format!("\"label\":\"{}\"", preset.label)), "{preset:?} missing");
+        }
+        // Swatch colors present (hex triplets).
+        assert!(json.contains("\"accent\":\"#") && json.contains("\"background\":\"#"));
+        // Invalid JSON fragments would break QML JSON.parse; spot-check separators.
+        assert!(!json.contains(",}"));
+        assert!(!json.contains("{,"));
+    }
+
+    #[test]
+    fn detect_active_matches_presets_and_custom() {
+        use crate::builtin::detect_active_id;
+        assert_eq!(detect_active_id(&Theme::parse(crate::builtin::PRESETS[0].toml)), "catppuccin");
+        let mut tweaked = Theme::parse(crate::builtin::PRESETS[1].toml);
+        tweaked.accent = "#123456".into();
+        assert_eq!(detect_active_id(&tweaked), "custom");
     }
 
     #[test]

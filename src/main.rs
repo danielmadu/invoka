@@ -1,5 +1,6 @@
 pub mod apps;
 pub mod bridge;
+pub mod builtin;
 pub mod config;
 pub mod hotkey;
 pub mod icons;

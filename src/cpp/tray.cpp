@@ -12,6 +12,7 @@ namespace {
 
 rust::Fn<void()> toggle_callback;
 rust::Fn<void()> quit_callback;
+rust::Fn<void()> settings_callback;
 
 void on_toggle_triggered(bool) {
     toggle_callback();
@@ -19,6 +20,10 @@ void on_toggle_triggered(bool) {
 
 void on_quit_triggered(bool) {
     quit_callback();
+}
+
+void on_settings_triggered(bool) {
+    settings_callback();
 }
 
 void on_activated(QSystemTrayIcon::ActivationReason reason) {
@@ -46,7 +51,8 @@ int invoka_app_exec() {
     return QCoreApplication::exec();
 }
 
-void invoka_tray_init(rust::Fn<void()> on_toggle, rust::Fn<void()> on_quit) {
+void invoka_tray_init(rust::Fn<void()> on_toggle, rust::Fn<void()> on_quit,
+                      rust::Fn<void()> on_settings) {
     const bool available = QSystemTrayIcon::isSystemTrayAvailable();
     fprintf(stderr, "[invoka] tray available=%d\n", available ? 1 : 0);
     if (!available) {
@@ -55,11 +61,15 @@ void invoka_tray_init(rust::Fn<void()> on_toggle, rust::Fn<void()> on_quit) {
 
     toggle_callback = on_toggle;
     quit_callback = on_quit;
+    settings_callback = on_settings;
 
     auto* tray = new QSystemTrayIcon(QIcon::fromTheme(QStringLiteral("system-search")));
     tray->setToolTip(QStringLiteral("Invoka"));
 
     auto* menu = new QMenu();
+    QAction* settings_action = menu->addAction(QObject::tr("Settings"));
+    settings_action->setIcon(QIcon::fromTheme(QStringLiteral("preferences-desktop")));
+    QObject::connect(settings_action, &QAction::triggered, &on_settings_triggered);
     QAction* toggle_action = menu->addAction(QObject::tr("Toggle launcher"));
     QObject::connect(toggle_action, &QAction::triggered, &on_toggle_triggered);
     menu->addSeparator();

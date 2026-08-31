@@ -16,9 +16,11 @@ Window {
     readonly property int rowHeight: 50
     readonly property int maxVisibleRows: 7
     readonly property int headerHeight: 64
+    readonly property int settingsRowHeight: 44
 
     property var rows: []
     property int selectedIndex: 0
+    property var themes: []
 
     function runSearch(text) {
         try {
@@ -42,6 +44,20 @@ Window {
         searchInput.forceActiveFocus()
         root.raise()
         root.requestActivate()
+    }
+
+    function loadThemes() {
+        try {
+            root.themes = JSON.parse(controller.themes_json)
+        } catch (e) {
+            console.log("[invoka] themes json error: " + e)
+            root.themes = []
+        }
+    }
+
+    function centerSettings() {
+        settings.x = Math.round((Screen.width - settings.width) / 2)
+        settings.y = Math.round(Screen.height * 0.3)
     }
 
     visible: controller.visible
@@ -69,7 +85,10 @@ Window {
     Controller {
         id: controller
 
-        Component.onCompleted: controller.bootstrap()
+        Component.onCompleted: {
+            controller.bootstrap()
+            root.loadThemes()
+        }
     }
 
     Rectangle {
@@ -282,6 +301,238 @@ Window {
                     font.pixelSize: 13
                     visible: root.rows.length === 0 && searchInput.text.length > 0
                 }
+            }
+        }
+    }
+
+    Window {
+        id: settings
+
+        visible: controller.settings_visible
+        flags: Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Tool
+        color: "transparent"
+        title: "Invoka Settings"
+        width: 420
+        height: settingsHeader.height
+                + Math.min(root.themes.length, 7) * root.settingsRowHeight
+                + customNote.height + 24
+
+        onVisibleChanged: {
+            if (visible) {
+                settings.centerOnScreen()
+                settings.requestActivate()
+            }
+        }
+
+        onActiveChanged: {
+            if (!active && visible) {
+                controller.settings_visible = false
+            }
+        }
+
+        function centerOnScreen() {
+            x = Math.round((Screen.width - width) / 2)
+            y = Math.round(Screen.height * 0.3)
+        }
+
+        Shortcut {
+            sequence: "Esc"
+            enabled: settings.visible
+            onActivated: controller.settings_visible = false
+        }
+
+        Rectangle {
+            id: settingsCard
+
+            anchors.fill: parent
+            radius: 12
+            color: root.bg
+            border.color: Qt.rgba(root.accent.r, root.accent.g, root.accent.b, 0.25)
+            border.width: 1
+
+            Item {
+                id: settingsHeader
+
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.top: parent.top
+                height: 48
+
+                Text {
+                    anchors.left: parent.left
+                    anchors.leftMargin: 18
+                    anchors.verticalCenter: parent.verticalCenter
+
+                    text: "Settings"
+                    color: root.fg
+                    font.family: "JetBrainsMono Nerd Font"
+                    font.pixelSize: 15
+                    font.bold: true
+                }
+
+                Text {
+                    id: settingsClose
+
+                    anchors.right: parent.right
+                    anchors.rightMargin: 18
+                    anchors.verticalCenter: parent.verticalCenter
+
+                    text: "\u2715"
+                    color: mouseOverClose.containsMouse ? root.accent : root.muted
+                    font.family: "JetBrainsMono Nerd Font"
+                    font.pixelSize: 14
+
+                    MouseArea {
+                        id: mouseOverClose
+
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: controller.settings_visible = false
+                    }
+                }
+
+                Rectangle {
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.bottom: parent.bottom
+                    height: 1
+                    color: Qt.rgba(root.fg.r, root.fg.g, root.fg.b, 0.08)
+                }
+            }
+
+            Flickable {
+                id: settingsFlickable
+
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.top: settingsHeader.bottom
+                anchors.bottom: customNote.top
+                clip: true
+                contentWidth: width
+                contentHeight: settingsColumn.height
+                interactive: contentHeight > height
+
+                Column {
+                    id: settingsColumn
+
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+
+                    Repeater {
+                        model: root.themes
+
+                        delegate: Item {
+                            id: themeRow
+
+                            readonly property bool isActive: controller.active_theme_id === modelData.id
+                            readonly property bool isHovered: themeMouse.containsMouse
+
+                            width: settingsColumn.width
+                            height: root.settingsRowHeight
+
+                            Rectangle {
+                                anchors.fill: parent
+                                anchors.margins: 3
+                                radius: 8
+                                color: root.selection
+                                opacity: themeRow.isActive ? 0.8 : (themeRow.isHovered ? 0.45 : 0)
+                                Behavior on opacity {
+                                    NumberAnimation {
+                                        duration: 60
+                                    }
+                                }
+                            }
+
+                            Row {
+                                anchors.left: parent.left
+                                anchors.leftMargin: 16
+                                anchors.verticalCenter: parent.verticalCenter
+                                spacing: 6
+
+                                Rectangle {
+                                    width: 18
+                                    height: 18
+                                    radius: 5
+                                    color: modelData.background
+                                    border.color: Qt.rgba(root.fg.r, root.fg.g, root.fg.b, 0.2)
+                                    border.width: 1
+                                }
+                                Rectangle {
+                                    width: 18
+                                    height: 18
+                                    radius: 5
+                                    color: modelData.accent
+                                    border.color: Qt.rgba(root.fg.r, root.fg.g, root.fg.b, 0.2)
+                                    border.width: 1
+                                }
+                                Rectangle {
+                                    width: 18
+                                    height: 18
+                                    radius: 5
+                                    color: modelData.foreground
+                                    border.color: Qt.rgba(root.fg.r, root.fg.g, root.fg.b, 0.2)
+                                    border.width: 1
+                                }
+                            }
+
+                            Text {
+                                anchors.left: parent.left
+                                anchors.leftMargin: 88
+                                anchors.right: activeMark.left
+                                anchors.rightMargin: 8
+                                anchors.verticalCenter: parent.verticalCenter
+
+                                text: modelData.label
+                                color: themeRow.isActive ? root.accent : root.fg
+                                font.family: "JetBrainsMono Nerd Font"
+                                font.pixelSize: 14
+                                elide: Text.ElideRight
+                            }
+
+                            Text {
+                                id: activeMark
+
+                                anchors.right: parent.right
+                                anchors.rightMargin: 16
+                                anchors.verticalCenter: parent.verticalCenter
+
+                                text: "\u2713"
+                                color: root.accent
+                                font.family: "JetBrainsMono Nerd Font"
+                                font.pixelSize: 14
+                                font.bold: true
+                                visible: themeRow.isActive
+                            }
+
+                            MouseArea {
+                                id: themeMouse
+
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: controller.selectTheme(modelData.id)
+                            }
+                        }
+                    }
+                }
+            }
+
+            Text {
+                id: customNote
+
+                anchors.left: parent.left
+                anchors.leftMargin: 18
+                anchors.right: parent.right
+                anchors.rightMargin: 18
+                anchors.bottom: parent.bottom
+                anchors.bottomMargin: 8
+
+                text: "\u2022 custom theme (theme.toml edited manually)"
+                color: root.muted
+                font.family: "JetBrainsMono Nerd Font"
+                font.pixelSize: 11
+                visible: controller.active_theme_id === "custom"
             }
         }
     }
