@@ -174,9 +174,9 @@ mod imp {
     /// Try to become the daemon. Returns the first pipe instance on success;
     /// `None` if another instance is already running (or the pipe could not
     /// be created).
-    pub fn bind_daemon_socket() -> Option<HANDLE> {
+    pub fn bind_daemon_socket() -> Option<IpcListener> {
         match create_instance(true) {
-            Some(handle) => Some(handle),
+            Some(handle) => Some(IpcListener(handle)),
             None => {
                 let err = Error::from_raw_os_error(unsafe { GetLastError() } as i32);
                 eprintln!("failed to bind IPC pipe {}: {err}", socket_path());
