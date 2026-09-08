@@ -1,3 +1,4 @@
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Mutex, OnceLock};
 
 #[cxx_qt::bridge]
@@ -87,6 +88,22 @@ const MAX_RESULTS: usize = 24;
 
 /// Handle to the Qt event loop, captured during `bootstrap`.
 static QT_THREAD: Mutex<Option<CxxQtThread<ffi::Controller>>> = Mutex::new(None);
+
+/// Visibility requested before the QML engine loads (cold start via
+/// `invoka toggle` with no daemon running).
+///
+/// The QML `Window` is created hidden by default; showing it later via
+/// `set_visible(true)` loses the startup activation token, so the window
+/// manager refuses focus. When the daemon starts with `show_immediately`,
+/// the controller is constructed already visible, so the window is mapped
+/// together with process startup and keeps focus.
+static INITIAL_VISIBLE: AtomicBool = AtomicBool::new(false);
+
+/// Must be called before the QML engine loads (i.e. before the `Controller`
+/// QObject is constructed).
+pub fn set_initial_visible(visible: bool) {
+    INITIAL_VISIBLE.store(visible, Ordering::Relaxed);
+}
 
 /// Installed applications, scanned once on first use.
 static APPS: OnceLock<Vec<AppEntry>> = OnceLock::new();
@@ -201,7 +218,7 @@ impl Default for ControllerRust {
             accent: QString::from(theme.accent.clone()),
             selection: QString::from(theme.selection.clone()),
             muted: QString::from(theme.muted.clone()),
-            visible: false,
+            visible: INITIAL_VISIBLE.load(Ordering::Relaxed),
             settings_visible: false,
             themes_json: QString::from(themes_json()),
             active_theme_id: QString::from(crate::builtin::detect_active_id(&theme)),

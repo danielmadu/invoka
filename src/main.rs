@@ -69,6 +69,12 @@ fn run_daemon(show_immediately: bool) {
     // QApplication lives on the C++ side (needed for QSystemTrayIcon).
     bridge::ffi::invoka_app_init();
 
+    // Cold start (`invoka toggle` with no daemon running): construct the
+    // controller already visible so the window is mapped together with
+    // process startup and keeps the WM activation token / focus. Must run
+    // before the QML engine constructs the `Controller` object.
+    bridge::set_initial_visible(show_immediately);
+
     let mut engine = QQmlApplicationEngine::new();
 
     if let Some(engine) = engine.as_mut() {

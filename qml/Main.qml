@@ -41,9 +41,17 @@ Window {
         root.centerOnScreen()
         searchInput.text = ""
         root.runSearch("")
-        searchInput.forceActiveFocus()
+        // NOTE: raise/requestActivate precisam vir ANTES do
+        // forceActiveFocus. Na primeira exibição a janela ainda não está
+        // ativa, então focar o TextInput antes de ativar a janela perde o
+        // foco (o cursor não fica no launcher). Ativa primeiro, foca depois
+        // e agenda retries curtos porque WMs (X11/Wayland) ativam de forma
+        // assíncrona e podem ignorar o primeiro requestActivate.
         root.raise()
         root.requestActivate()
+        searchInput.forceActiveFocus()
+        focusRetry.attempts = 0
+        focusRetry.restart()
     }
 
     function loadThemes() {
@@ -68,16 +76,56 @@ Window {
     color: "transparent"
     title: "Invoka"
 
-    Component.onCompleted: root.centerOnScreen()
-
-    onVisibleChanged: {
+    Component.onCompleted: {
+        root.centerOnScreen()
         if (visible) {
+            // Arranque a frio (daemon iniciado via `toggle` com o processo
+            // encerrado): a janela já nasce visível, então onVisibleChanged
+            // nunca dispara — é preciso invocar o summon aqui para popular
+            // a busca e levar o foco/cursor para o campo de pesquisa.
             root.summon()
         }
     }
 
+    Timer {
+        id: focusRetry
+
+        interval: 50
+        repeat: true
+        running: false
+        property int attempts: 0
+        onTriggered: {
+            if (searchInput.activeFocus || !root.visible) {
+                attempts = 0
+                stop()
+                return
+            }
+            if (attempts >= 6) {
+                attempts = 0
+                stop()
+                return
+            }
+            attempts += 1
+            root.raise()
+            root.requestActivate()
+            searchInput.forceActiveFocus()
+        }
+    }
+
+    onVisibleChanged: {
+        if (visible) {
+            root.summon()
+        } else {
+            focusRetry.stop()
+        }
+    }
+
     onActiveChanged: {
-        if (!active && visible) {
+        if (active && visible) {
+            // A janela só fica realmente ativa depois (assíncrono no WM);
+            // quando isso acontece, garante o cursor no campo de busca.
+            searchInput.forceActiveFocus()
+        } else if (!active && visible) {
             controller.visible = false
         }
     }
