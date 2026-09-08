@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-09-08
+
+### Fixed
+
+- Launcher focus: first toggle via hotkey now raises/activates the window
+  before focusing the search field, with short retries plus refocus on window
+  activation, so the cursor lands in the launcher on first show
+- Cold start (`invoka toggle` with no daemon running): the controller is
+  constructed already visible so the window is mapped together with process
+  startup and keeps the WM activation token/focus; `summon()` also runs on
+  `Component.onCompleted` when the window is created visible
+
+### Changed
+
+- Windows build in release CI now runs on manual dispatch only (no automatic
+  build on tag push)
+
 ## [0.2.0] - 2026-08-30
 
 ### Added
@@ -68,5 +85,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Tray icon (QSystemTrayIcon/SNI)
 - Hide on focus loss
 
+[0.2.1]: https://github.com/danielmadu/invoka/releases/tag/v0.2.1
 [0.2.0]: https://github.com/danielmadu/invoka/releases/tag/v0.2.0
 [0.1.0]: https://github.com/danielmadu/invoka/releases/tag/v0.1.0
